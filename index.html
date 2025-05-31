@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الراتب</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #f0f4f8;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .nav-buttons, .actions {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .page {
+      display: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 5px;
+    }
+    input[type="number"]:not(:focus):not([value=""]):placeholder-shown {
+      color: #999;
+    }
+    .week-section {
+      margin-top: 20px;
+    }
+    .week-section h3 {
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+    }
+    .day-buttons {
+      margin-bottom: 10px;
+    }
+    .day-buttons button {
+      font-size: 14px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>الراتب</h1>
+    <div class="nav-buttons">
+      <button onclick="showPage('salaryPage')">صفحة الراتب</button>
+      <button onclick="showPage('tasksPage')">صفحة المتطلبات</button>
+    </div>
+
+    <div id="salaryPage" class="page">
+      <h2>صفحة الراتب</h2>
+      <label>الراتب الأساسي: <input type="number" id="baseSalary" placeholder="" oninput="calculateRemaining()"></label>
+      <table>
+        <thead>
+          <tr>
+            <th>الصرفيات</th>
+            <th>القيمة</th>
+          </tr>
+        </thead>
+        <tbody id="expensesTable">
+          <tr><td>مولدة</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>انترنت</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>مسواك</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>بنزين</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>زينب</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>سيارة</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>عزيز</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>منزل</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>أخرى</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+          <tr><td>الطلعات</td><td><input type="number" placeholder="" oninput="calculateRemaining()" class="expense"></td></tr>
+        </tbody>
+      </table>
+      <h3>المتبقي: <span id="remaining">0</span></h3>
+      <div class="actions">
+        <button onclick="saveSalaryData()">حفظ</button>
+        <button onclick="resetSalaryData()">إعادة</button>
+        <button onclick="clearSalaryData()">حذف</button>
+        <button onclick="printSection('salaryPage')">طباعة الراتب</button>
+        <button onclick="closePage()">إغلاق</button>
+      </div>
+    </div>
+
+    <div id="tasksPage" class="page">
+      <h2>المتطلبات والمشتريات</h2>
+      <div class="nav-buttons" id="weeksSelector"></div>
+      <div id="daysContainer"></div>
+      <div class="actions">
+        <button onclick="saveTasks()">حفظ</button>
+        <button onclick="resetTasks()">إعادة</button>
+        <button onclick="clearTasks()">حذف الكل</button>
+        <button onclick="printSection('tasksPage')">طباعة المتطلبات</button>
+        <button onclick="closePage()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+      document.getElementById(pageId).style.display = 'block';
+      if (pageId === 'tasksPage') {
+        buildWeeks();
+      }
+      if (pageId === 'salaryPage') loadSalaryData();
+    }
+
+    function closePage() {
+      document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+    }
+
+    function calculateRemaining() {
+      const base = parseFloat(document.getElementById('baseSalary').value) || 0;
+      let totalExpenses = 0;
+      document.querySelectorAll('.expense').forEach(e => {
+        totalExpenses += parseFloat(e.value) || 0;
+      });
+      document.getElementById('remaining').textContent = base - totalExpenses;
+    }
+
+    function saveSalaryData() {
+      const data = {
+        base: document.getElementById('baseSalary').value,
+        expenses: Array.from(document.querySelectorAll('.expense')).map(e => e.value)
+      };
+      localStorage.setItem('salaryData', JSON.stringify(data));
+      alert('تم حفظ بيانات الراتب.');
+    }
+
+    function loadSalaryData() {
+      const data = JSON.parse(localStorage.getItem('salaryData'));
+      if (!data) return;
+      document.getElementById('baseSalary').value = data.base || '';
+      const expenses = document.querySelectorAll('.expense');
+      expenses.forEach((e, i) => {
+        e.value = data.expenses[i] || '';
+      });
+      calculateRemaining();
+    }
+
+    function resetSalaryData() {
+      loadSalaryData();
+    }
+
+    function clearSalaryData() {
+      if (confirm('هل تريد حذف بيانات الراتب؟')) {
+        localStorage.removeItem('salaryData');
+        document.getElementById('baseSalary').value = '';
+        document.querySelectorAll('.expense').forEach(e => e.value = '');
+        calculateRemaining();
+      }
+    }
+
+    const weeks = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع'];
+    const days = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+    function buildWeeks() {
+      const selector = document.getElementById('weeksSelector');
+      selector.innerHTML = '';
+      weeks.forEach((week, index) => {
+        const btn = document.createElement('button');
+        btn.textContent = week;
+        btn.onclick = () => loadWeekTasks(week);
+        selector.appendChild(btn);
+      });
+    }
+
+    function loadWeekTasks(week) {
+      const container = document.getElementById('daysContainer');
+      container.innerHTML = `<h3>${week}</h3>`;
+      const saved = JSON.parse(localStorage.getItem('weeklyTasks') || '{}');
+      const data = saved[week] || {};
+      days.forEach(day => {
+        const textarea = document.createElement('textarea');
+        textarea.value = data[day] || '';
+        textarea.dataset.week = week;
+        textarea.dataset.day = day;
+        const label = document.createElement('div');
+        label.innerHTML = `<strong>${day}</strong>`;
+        container.appendChild(label);
+        container.appendChild(textarea);
+      });
+    }
+
+    function saveTasks() {
+      const data = {};
+      document.querySelectorAll('textarea').forEach(area => {
+        const week = area.dataset.week;
+        const day = area.dataset.day;
+        if (!data[week]) data[week] = {};
+        data[week][day] = area.value;
+      });
+      localStorage.setItem('weeklyTasks', JSON.stringify(data));
+      alert('تم الحفظ.');
+    }
+
+    function resetTasks() {
+      const weekTitle = document.querySelector('#daysContainer h3');
+      if (weekTitle) {
+        loadWeekTasks(weekTitle.textContent);
+      }
+    }
+
+    function clearTasks() {
+      if (confirm('هل أنت متأكد من حذف جميع البيانات؟')) {
+        localStorage.removeItem('weeklyTasks');
+        document.getElementById('daysContainer').innerHTML = '';
+      }
+    }
+
+    function printSection(sectionId) {
+      const section = document.getElementById(sectionId).cloneNode(true);
+      const originalDir = document.documentElement.getAttribute('dir');
+      const originalLang = document.documentElement.getAttribute('lang');
+
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write(`
+        <html lang="${originalLang}" dir="${originalDir}">
+        <head>
+          <title>طباعة</title>
+          <style>
+            body { font-family: 'Arial', sans-serif; direction: rtl; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+            h1, h2, h3 { text-align: center; }
+            textarea { width: 100%; height: 60px; }
+          </style>
+        </head>
+        <body>${section.innerHTML}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+  </script>
+</body>
+</html>
